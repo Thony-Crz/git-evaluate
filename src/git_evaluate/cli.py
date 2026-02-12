@@ -69,6 +69,11 @@ def format_text_output(result: dict) -> str:
         stats = result['details']['test']['stats']
         output.append(f"  Test files: {stats['test_files']}")
         output.append(f"  Implementation files: {stats['implementation_files']}")
+        if 'test_lines' in stats and 'implementation_lines' in stats:
+            output.append(f"  Test lines: {stats['test_lines']}")
+            output.append(f"  Implementation lines: {stats['implementation_lines']}")
+            if 'test_to_code_ratio' in stats and stats['test_to_code_ratio'] > 0:
+                output.append(f"  Test-to-code ratio: {stats['test_to_code_ratio']}:1")
         output.append("")
     
     output.append("=" * 70)
@@ -85,6 +90,10 @@ def main():
 Examples:
   # Evaluate staging area with a commit message
   git-evaluate -m "feat: add new feature"
+  
+  # Evaluate a specific commit from history
+  git-evaluate --commit abc123
+  git-evaluate -c HEAD~1
   
   # Evaluate with JSON output for CI/hooks
   git-evaluate -m "fix: bug fix" --json
@@ -103,6 +112,12 @@ Exit codes:
         '-m', '--message',
         type=str,
         help='Commit message to evaluate'
+    )
+    
+    parser.add_argument(
+        '-c', '--commit',
+        type=str,
+        help='Evaluate a specific commit from history (e.g., HEAD~1, abc123)'
     )
     
     parser.add_argument(
@@ -129,7 +144,12 @@ Exit codes:
     try:
         # Create evaluator and run evaluation
         evaluator = GitEvaluator(args.repo)
-        result = evaluator.evaluate(message=args.message)
+        
+        # Evaluate commit from history or staging area
+        if args.commit:
+            result = evaluator.evaluate_commit(args.commit)
+        else:
+            result = evaluator.evaluate(message=args.message)
         
         # Output results
         if args.json:

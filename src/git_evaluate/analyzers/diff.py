@@ -65,41 +65,48 @@ class DiffAnalyzer:
         }
 
     def _check_diff_size(self, total_changes: int, num_files: int) -> int:
-        """Check if diff size is reasonable."""
+        """Check if diff size is reasonable (Clean Code: atomic commits)."""
         penalty = 0
 
         if total_changes == 0:
             self.warnings.append("No line changes detected")
             return 0
 
-        if total_changes > 1000:
+        # Clean Code recommends small, atomic commits
+        if total_changes > 500:
             self.issues.append(f"Very large diff: {total_changes} lines changed")
-            self.suggestions.append("Consider splitting this into smaller, focused commits")
-            penalty = 20
-        elif total_changes > 500:
-            self.warnings.append(f"Large diff: {total_changes} lines changed")
-            self.suggestions.append("Large commits are harder to review. Consider splitting if possible.")
-            penalty = 10
+            self.suggestions.append("Split into multiple atomic commits (recommended: <200 lines)")
+            penalty = 30
         elif total_changes > 300:
+            self.issues.append(f"Large diff: {total_changes} lines changed")
+            self.suggestions.append("Large commits are hard to review. Consider splitting (recommended: <200 lines)")
+            penalty = 20
+        elif total_changes > 200:
             self.warnings.append(f"Moderately large diff: {total_changes} lines changed")
+            self.suggestions.append("Consider smaller, focused commits for easier review")
+            penalty = 12
+        elif total_changes > 100:
+            self.warnings.append(f"Significant diff: {total_changes} lines changed")
             penalty = 5
 
         return penalty
 
     def _check_file_count(self, num_files: int) -> int:
-        """Check if number of files is reasonable."""
+        """Check if number of files is reasonable (atomic commits)."""
         penalty = 0
 
-        if num_files > 20:
+        # Atomic commits should focus on one thing
+        if num_files > 10:
             self.issues.append(f"Too many files changed: {num_files} files")
-            self.suggestions.append("Consider splitting changes across multiple commits")
-            penalty = 15
-        elif num_files > 10:
-            self.warnings.append(f"Many files changed: {num_files} files")
-            penalty = 8
+            self.suggestions.append("Split into atomic commits (recommended: 1-5 files per commit)")
+            penalty = 25
         elif num_files > 5:
+            self.warnings.append(f"Many files changed: {num_files} files")
+            self.suggestions.append("Consider splitting into smaller, focused commits")
+            penalty = 15
+        elif num_files > 3:
             self.warnings.append(f"Several files changed: {num_files} files")
-            penalty = 3
+            penalty = 8
 
         return penalty
 
@@ -111,7 +118,11 @@ class DiffAnalyzer:
             filename = file_stat.get('filename', 'unknown')
             changes = file_stat.get('additions', 0) + file_stat.get('deletions', 0)
             
-            if changes > 500:
+            if changes > 300:
+                self.issues.append(f"Very large changes in single file: {filename} ({changes} lines)")
+                self.suggestions.append(f"Refactor {filename} changes into smaller commits")
+                penalty = min(penalty + 10, 25)
+            elif changes > 150:
                 self.warnings.append(f"Large changes in single file: {filename} ({changes} lines)")
                 penalty = min(penalty + 5, 15)
 

@@ -155,3 +155,53 @@ class RiskAnalyzer:
                         penalty += 25
 
         return min(penalty, 75)  # Cap at 75 points
+
+    def _check_diff_size_risk(self, file_stats: List[Dict]) -> int:
+        """Large diffs increase risk due to harder review."""
+        penalty = 0
+        
+        total_changes = sum(f.get('additions', 0) + f.get('deletions', 0) for f in file_stats)
+        num_files = len(file_stats)
+        
+        # Large diffs are harder to review, increasing risk of missed issues
+        if total_changes > 500:
+            self.warnings.append(f"Large diff increases review risk ({total_changes} lines)")
+            self.suggestions.append("Large changes are harder to audit for security issues")
+            penalty = 15
+        elif total_changes > 300:
+            self.warnings.append(f"Moderately large diff affects review quality ({total_changes} lines)")
+            penalty = 8
+        
+        # Many files also increase review complexity
+        if num_files > 10:
+            self.warnings.append(f"Many files increase risk of oversight ({num_files} files)")
+            penalty += 10
+        elif num_files > 5:
+            penalty += 5
+        
+        return min(penalty, 20)  # Cap at 20 points
+
+    def _check_diff_size_risk(self, file_stats: List[Dict]) -> int:
+        """Large diffs increase risk due to harder review."""
+        penalty = 0
+        
+        total_changes = sum(f.get('additions', 0) + f.get('deletions', 0) for f in file_stats)
+        num_files = len(file_stats)
+        
+        # Large diffs are harder to review, increasing risk of missed issues
+        if total_changes > 500:
+            self.warnings.append(f"Large diff increases review risk ({total_changes} lines)")
+            self.suggestions.append("Large changes are harder to audit for security issues")
+            penalty = 15
+        elif total_changes > 300:
+            self.warnings.append(f"Moderately large diff affects review quality ({total_changes} lines)")
+            penalty = 8
+        
+        # Many files also increase review complexity
+        if num_files > 10:
+            self.warnings.append(f"Many files increase risk of oversight ({num_files} files)")
+            penalty += 10
+        elif num_files > 5:
+            penalty += 5
+        
+        return min(penalty, 20)  # Cap at 20 points
