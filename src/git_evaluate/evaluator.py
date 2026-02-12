@@ -121,8 +121,15 @@ class GitEvaluator:
                 # Get the diff stats for this file
                 try:
                     diff_text = self.repo.git.diff('--cached', '--', diff_item.a_path)
-                    additions = diff_text.count('\n+') - diff_text.count('\n+++')
-                    deletions = diff_text.count('\n-') - diff_text.count('\n---')
+                    
+                    # Count additions and deletions by iterating through lines
+                    additions = 0
+                    deletions = 0
+                    for line in diff_text.split('\n'):
+                        if line.startswith('+') and not line.startswith('+++'):
+                            additions += 1
+                        elif line.startswith('-') and not line.startswith('---'):
+                            deletions += 1
                     
                     stats.append({
                         'filename': diff_item.a_path,

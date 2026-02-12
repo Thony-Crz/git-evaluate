@@ -156,7 +156,9 @@ class TestAnalyzer:
             self.suggestions.append("Add or update tests to cover your changes")
             penalty = 40
         elif impl_files and test_files:
-            # Check ratio
+            # Check ratio based on file count
+            # Note: This uses file counts rather than line counts for simplicity.
+            # Future enhancement: Consider line-based ratios for more accurate assessment.
             ratio = len(test_files) / len(impl_files)
             if ratio < 0.3:
                 self.warnings.append(f"Few test files relative to implementation ({len(test_files)} test vs {len(impl_files)} impl)")
