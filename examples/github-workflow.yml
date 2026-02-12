@@ -1,0 +1,52 @@
+name: Git Evaluate
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for better diff analysis
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install git-evaluate
+        run: |
+          pip install gitpython
+          # In production, install from PyPI: pip install git-evaluate
+          # For development, install from local: pip install -e .
+      
+      - name: Run git-evaluate
+        run: |
+          # Get the PR title as commit message
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          
+          # Run evaluation on the changes
+          git-evaluate -m "$PR_TITLE" --json > evaluation.json
+          
+          # Display results
+          cat evaluation.json
+          
+          # Extract score and exit code
+          SCORE=$(cat evaluation.json | python3 -c "import sys, json; print(json.load(sys.stdin)['overall_score'])")
+          EXIT_CODE=$(cat evaluation.json | python3 -c "import sys, json; print(json.load(sys.stdin)['exit_code'])")
+          
+          echo "Overall Score: $SCORE/100"
+          
+          # Fail if critical
+          if [ "$EXIT_CODE" -eq "2" ]; then
+            echo "::error::Critical issues found in PR changes"
+            exit 1
+          fi
+          
+          # Comment on PR with results
+          # (requires permissions and additional setup)
